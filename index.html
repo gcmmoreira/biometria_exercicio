@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Biometria exercício Aula 09 by gcmmoreira</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Biometria exercício Aula 09</h1>
+      <h2 class="project-tagline">Link criado para expor as informações do exercício. A formatação e apresentação dos códigos e resultados foi feita usando o suporte do Markdown.</h2>
+      <a href="https://github.com/gcmmoreira/biometria_exercicio" class="btn">View on GitHub</a>
+      <a href="https://github.com/gcmmoreira/biometria_exercicio/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/gcmmoreira/biometria_exercicio/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <p><strong>Exercício da disciplina de Biometria de Marcadores Genéticos (Relativo à aula 09)</strong></p>
+
+<p><strong>Discente: Gabriel Costa Monteiro Moreira (número USP: 7840511)</strong></p>
+
+<p><strong>Objetivo: Fixar os conceitos apresentados em aula. Aprender a realizar mapeamento por intervalo usando a aproximação de Haley-Knott.</strong></p>
+
+<p>Questão 2) Faça mapeamento de QTL’s no conjunto de dados Mouse Data usando a aproximação de Haley-Knott.</p>
+
+<p>Use probabilidades de dois pontos para fazer inferências sobre eventual QTL no intervalo entre dois marcadores (usando a “famosa” tabela discutida durante a aula).</p>
+
+<p>Lembre-se que em situações reais o ideal seria usar probabilidades multiponto; tal estratégia não será usada no exercício apenas por razões didáticas. Use somente adaptações de códigos em R usados em listas anteriores e apresentados em aula (função lm(), etc), ou seja, não use o R/qtl ou programa similar para fazer as análises, mas sim funções do R desenvolvidas para realizar regressões lineares.</p>
+
+<p>Se preferir, use alguma planilha eletrônica para calcular as probabilidades condicionais. Apresente o resultado em um gráfico, e também uma tabela com o(s) valor(es) do(s) QTL(s) mapeado(s), de forma semelhante ao apresentado na literatura (efeitos, LOD, etc).</p>
+
+<p>Assuma que o threshold é 1.43 (LOD). O objetivo do exercício é entender os fundamentos estatísticos e de programação envolvidos, e não os resultados em si.</p>
+
+<p>O exercício pode ser feito pelo mesmo grupo que analisou os dados de Mimulus.</p>
+
+<p><strong>Considerando o enunciado da questão, o exercício foi elaborado em parceria com a discente Thaís Fernanda Godoy.</strong>
+<strong>Abaixo, segue lista de comandos que utilizamos no R para responder o exercício.</strong></p>
+
+<pre><code>mouse &lt;- read.csv("http://dl.dropbox.com/u/1968009/mouse.csv")
+mouse2&lt;-mouse[2:16]
+map&lt;-c(0, 6.8, 1.0, 1.0, 2.9, 2.9, 4.9, 3.9, 1.0, 1.9, 1.9, 2.9, 6.8, 10.8)
+map&lt;-cumsum(map)
+map
+k_mf&lt;-function(m)
+  0.5 * tanh(m/50)
+ret.pred&lt;-function(x, y, theta){
+  if(x==1 &amp; y==1) return(1)
+  else if(x==1 &amp; y==0) return(1-theta)
+  else if(x==0 &amp; y==1) return(theta)
+  else if(x==0 &amp; y==0) return(0)
+  else stop
+}
+interv&lt;-diff(map)
+res&lt;-numeric()
+for(k in 2:(ncol(mouse2)-1)){
+  m&lt;-seq(from=0, to=interv[k-1], by=1)
+  theta&lt;-k_mf(m)/k_mf(interv[1])
+  temp.all&lt;-numeric()
+  for(j in 1:nrow(mouse2)){
+    temp&lt;-numeric(length(theta))
+    for(i in 1:length(theta)){
+      temp[i]&lt;-ret.pred(x=mouse2[j,k], y=mouse2[j,k+1],theta[i])
+    }
+    temp.all&lt;-rbind(temp.all, temp)
+  }
+  res&lt;-cbind(res, temp.all)
+}
+F&lt;-numeric(ncol(res))
+R2&lt;- numeric(ncol(res))
+efect&lt;- numeric(ncol(res))
+for(i in 1:ncol(res)){
+  model&lt;-summary(lm(mouse2[,1] ~ res[,i]))
+  print (model)
+  F[i-1]&lt;-(round((model$fstatistic[1]),2))
+  R2[i-1]&lt;- (round((model$r.squared),2))
+  efect[i-1]&lt;- (round((model$coefficients[2,1]),2))
+}
+F
+LOD &lt;- (round(((103/2)*(log10((F*1/101)+1))),2))
+LOD
+R2*100
+efect
+plot(LOD, type="l", ylab="LOD score", xlab="Localização (cM)", ylim=c(0,8),
+     xlim=c(0,50), lwd=3)
+abline(h=1.43, col="blue", lty=3, lwd=3)
+final&lt;-data.frame(LOD,R2,efect)
+final
+</code></pre>
+
+<p><strong>RESULTADOS</strong></p>
+
+<p>Ao final das análises, criamos uma tabela com os valores respectivos de LOD, R2 e efect. 
+A tabela pode ser visualizada aqui <a href="https://cloud.githubusercontent.com/assets/12286650/8119076/4976c02e-1069-11e5-806e-ab1892818583.jpg">Tabela 01</a></p>
+
+<p>Além da tabela, geramos o gráfico com os valores do LOD score e a localização em cM.
+O gráfico pode ser visualizado no link a seguir <a href="https://cloud.githubusercontent.com/assets/12286650/8119178/05b41020-106a-11e5-8ea6-faa5b6f6ed54.jpeg">Gráfico</a></p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/gcmmoreira/biometria_exercicio">Biometria exercício Aula 09</a> is maintained by <a href="https://github.com/gcmmoreira">gcmmoreira</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
+
